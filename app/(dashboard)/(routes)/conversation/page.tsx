@@ -14,15 +14,17 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
+// Import the useMessages hook
+import { useMessages } from "@/lib/store"
+
 type FormSchemaType = z.infer<typeof formSchema>;
-type MessageType = {
-  user: string;
-  content: string;
-};
 
 const ConversationPage = () => {
   const router = useRouter();
-  const [messages, setMessages] = useState<MessageType[]>([]);
+  
+  // Replace useState with useMessages hook
+  const { messages, setMessages, clearMessages } = useMessages();
+  
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,18 +36,16 @@ const ConversationPage = () => {
 
   const onSubmit = async (values: FormSchemaType) => {
     try {
-      const userMessage: MessageType = {
-        user: "user",
-        content: values.prompt,
-      };
+      const userMessage = values.prompt;
 
-      const newMessages = [...messages, userMessage];
+      // Use setMessages from useMessages hook to add a new message
+      setMessages("USER", userMessage);
 
       const response = await axios.post("/api/conversation", {
-        userMessage,
+        messages: messages,
       });
 
-      setMessages((current) => [...current, userMessage, response.data]);
+      // No need to set messages here, it's already done in useMessages hook
       form.reset();
     } catch (error: any) {
       //TODO: Open Modal
@@ -97,10 +97,10 @@ const ConversationPage = () => {
         </div>
         <div className="space-y-4 mt-4">
           <div className="flex float-col-reverse gap-y-4">
-            {/* {messages.map((message) => (
-              <div key={message.content}>{message.content}</div>
-            ))} */}
-            {/* {userMessage} */}
+            {/* Display messages */}
+            {messages.map((message) => (
+              <div key={message.id}>{message.text}</div>
+            ))}
           </div>
         </div>
       </div>
