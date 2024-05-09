@@ -8,8 +8,6 @@ type Creator = "USER" | "AI";
 type Message = {
   id: string;
   text: string;
-  createdAt: Date;
-  creator: Creator;
 };
 
 type MessageState = {
@@ -51,8 +49,6 @@ export const useMessages = create(
               {
                 id: generateRandomId(),
                 text: message,
-                createdAt: new Date(),
-                creator,
               },
             ],
           };
@@ -60,8 +56,8 @@ export const useMessages = create(
       },
     }),
     {
-      name: "messages", // name of the item in the storage (must be unique)
-      storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
+      name: "messages",
+      storage: createJSONStorage(() => sessionStorage),
       skipHydration: true,
     }
   )

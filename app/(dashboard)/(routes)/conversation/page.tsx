@@ -14,17 +14,19 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-// Import the useMessages hook
-import { useMessages } from "@/lib/store"
+import OpenAI from "openai";
+import Groq from "groq-sdk";
 
 type FormSchemaType = z.infer<typeof formSchema>;
 
 const ConversationPage = () => {
   const router = useRouter();
-  
+
   // Replace useState with useMessages hook
-  const { messages, setMessages, clearMessages } = useMessages();
-  
+  const [messages, setMessages] = useState<
+    OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+  >([]);
+
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,16 +38,22 @@ const ConversationPage = () => {
 
   const onSubmit = async (values: FormSchemaType) => {
     try {
-      const userMessage = values.prompt;
+      const userMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
+        role: "user",
+        content: values.prompt,
+      };
 
-      // Use setMessages from useMessages hook to add a new message
-      setMessages("USER", userMessage);
+      // Add user message to messages array
+      setMessages((messages) => [...messages, userMessage]);
 
+      // Send request to server
       const response = await axios.post("/api/conversation", {
-        messages: messages,
+        messages: [...messages, userMessage], // Send all messages including user message
       });
 
-      // No need to set messages here, it's already done in useMessages hook
+      // Update messages array with only the new response
+      setMessages((messages) => [...messages, response.data]);
+
       form.reset();
     } catch (error: any) {
       //TODO: Open Modal
@@ -97,10 +105,23 @@ const ConversationPage = () => {
         </div>
         <div className="space-y-4 mt-4">
           <div className="flex float-col-reverse gap-y-4">
-            {/* Display messages */}
-            {messages.map((message) => (
-              <div key={message.id}>{message.text}</div>
-            ))}
+            <div className="flex float-col-reverse gap-y-4">
+              {messages.map((message, index) => (
+                <div key={index} className="flex flex-col-reverse gap-y-2">
+                  {Array.isArray(message.content) ? (
+                    message.content.map((part, partIndex) => (
+                      <React.Fragment key={partIndex}>
+                        {part.type === "text" && (
+                          <p className="text-sm">{part.text}</p>
+                        )}
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <p className="text-sm">{message.content}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
